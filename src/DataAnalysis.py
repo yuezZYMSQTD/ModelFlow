@@ -142,7 +142,7 @@ def stat_df(data,cols=None,cols_cate=None,quantiles=[25,50,75],num_most=5,index=
         result.index.name='变量名'
     return result
 
-#TODO
+# TODO
 def stat_df_categorical(data):
     return
 
