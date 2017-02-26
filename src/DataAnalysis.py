@@ -29,9 +29,9 @@ def stat_series(data,numeric=None,quantiles=[25,50,75],num_most=5,index='English
     num_most: int，统计出现最多的前num_most个值。
     index: {'English','Chinese'}。
     返回描述统计的series，包含如下部分: 
-    中文名: 字段类型、总记录数、缺失记录数、缺失比例、均值、标准差、最小值、各分位点（如25%分位点,50%分位点,75%分位点）、最大值、
+    中文名: 字段类型、总记录数、非重复记录数、缺失记录数、缺失比例、均值、标准差、最小值、各分位点（如25%分位点,50%分位点,75%分位点）、最大值、
     出现第N多的值、出现第N多的值占比（N从1到num_most）；
-    英文名: type,count,missing_count,missing_ratio,mean,std,min,各分位点（如quantile25,quantile50,quantile75）,max,
+    英文名: type,count,count_unique,missing_count,missing_ratio,mean,std,min,各分位点（如quantile25,quantile50,quantile75）,max,
     valuemostN,freqmostN（N从1到num_most）
     
     '''
@@ -119,9 +119,9 @@ def stat_df(data,cols=None,cols_cate=None,quantiles=[25,50,75],num_most=5,index=
     num_most: int，统计出现最多的前num_most个值。
     index: {'English','Chinese'}。
     返回描述统计的dataframe，index为变量名，columns包含如下部分: 
-    中文名: 字段类型、总记录数、缺失记录数、缺失比例、均值、标准差、最小值、各分位点（如25%分位点,50%分位点,75%分位点）、最大值、
+    中文名: 字段类型、总记录数、非重复记录数、缺失记录数、缺失比例、均值、标准差、最小值、各分位点（如25%分位点,50%分位点,75%分位点）、最大值、
     出现第N多的值、出现第N多的值占比（N从1到num_most）；
-    英文名: type,count,missing_count,missing_ratio,mean,std,min,各分位点（如quantile25,quantile50,quantile75）,max,
+    英文名: type,count,count_unique,missing_count,missing_ratio,mean,std,min,各分位点（如quantile25,quantile50,quantile75）,max,
     valuemostN,freqmostN（N从1到num_most）
     
     '''
@@ -142,9 +142,44 @@ def stat_df(data,cols=None,cols_cate=None,quantiles=[25,50,75],num_most=5,index=
         result.index.name='变量名'
     return result
 
-# TODO
 def stat_df_categorical(data):
-    return
+    '''
+    针对离散型变量计算描述统计，目前包含：变量名、总记录数、非重复记录数、缺失记录数、缺失比例、取值、样本量及占比。
+    :param data: dataframe，均为离散型数据。
+    :return: dataframe，列名为：变量名、总记录数、非重复记录数、缺失记录数、缺失比例、取值、样本量、占比。
+             由于每个变量有多个取值，因此每个变量会有多行。
+    '''
+    result=[]
+    for col in data.columns.tolist():
+        tmp1={}
+        tmp1['变量名']=col
+        tmp1['总记录数']=data[col].shape[0]
+        tmp1['缺失记录数']=data[col].isnull().sum()
+        tmp1['缺失比例']=tmp1['缺失记录数']/float(tmp1['总记录数'])
+        value_counts=data[col].value_counts(normalize=False)
+        value_counts.index.name='取值'
+        value_counts.name='样本量'
+        value_counts=value_counts.reset_index()
+        value_counts['占比']=value_counts['样本量']/float(value_counts['样本量'].sum())
+        tmp1['非重复记录数']=value_counts.shape[0]
+        tmp1=pd.DataFrame(pd.Series(tmp1)).T
+        if value_counts.shape[0]>1:
+            tmp2=pd.DataFrame({'变量名':[col]*(value_counts.shape[0]-1),
+                               '总记录数':[np.nan]*(value_counts.shape[0]-1),
+                               '非重复记录数': [np.nan] * (value_counts.shape[0] - 1),
+                               '缺失记录数': [np.nan] * (value_counts.shape[0] - 1),
+                               '缺失比例': [np.nan] * (value_counts.shape[0] - 1)})
+        else:
+            tmp2=pd.DataFrame()
+        tmp1=pd.concat([tmp1,tmp2],axis=0)
+        tmp1=tmp1.reset_index(drop=True)
+        value_counts=value_counts.reset_index(drop=True)
+        tmp=pd.concat([tmp1,value_counts],axis=1)
+        result.append(tmp.copy())
+    result=pd.concat(result,axis=0,ignore_index=True)
+    result=result.reindex(columns=['变量名','总记录数','非重复记录数','缺失记录数','缺失比例',
+                                   '取值','样本量','占比'])
+    return result
 
 #Abnormal value
 def error_df(data, cols=None):
