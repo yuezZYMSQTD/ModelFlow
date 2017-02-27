@@ -14,7 +14,7 @@ from abc import ABCMeta, abstractmethod
 from sklearn.base import BaseEstimator,TransformerMixin
 from sklearn.preprocessing import OneHotEncoder
 import matplotlib.pyplot as plt
-import src.utils as utils
+import src.utils.utils as utils
 
 class BaseContinuous(BaseEstimator,TransformerMixin):
     """

@@ -11,12 +11,15 @@
 """
 import pandas as pd
 import numpy as np
-import seaborn as sns
+try:
+    import seaborn as sns
+except:
+    sns=None
 import matplotlib
 ##Linux下需要设置参数使得图片不显示，matplotlib.
 import matplotlib.pyplot as plt
 import src.discretize as discretize
-import src.utils as utils
+import src.utils.utils as utils
 import copy
 
 def stat_series(data,numeric=None,quantiles=[25,50,75],num_most=5,index='English'):

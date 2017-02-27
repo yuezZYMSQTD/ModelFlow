@@ -2,7 +2,7 @@
 
 import pandas as pd
 import numpy as np
-import src.utils as utils
+import src.utils.utils as utils
 import copy
 
 

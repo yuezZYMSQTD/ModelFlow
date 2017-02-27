@@ -12,13 +12,13 @@ from sklearn import metrics
 import os
 
 #导入相应模块
-import BasicDataStruct
-import DataAnalysis
-import discretize
-import continuous
-import FeatureSelection
-import ModelEvaluate
-import utils
+import src.BasicDataStruct as BasicDataStruct
+import src.DataAnalysis as DataAnalysis
+import src.discretize as discretize
+import src.continuous as continuous
+import src.FeatureSelection as FeatureSelection
+import src.ModelEvaluate as ModelEvaluate
+import src.utils.utils as utils
 
 path=r'F:\普林科技项目\哈尔滨银行\src\tasks\\'
 
