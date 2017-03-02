@@ -111,11 +111,15 @@ def plot_roc_auc(y_true,y_score,figsize=(18,8),close=True):
         ax.legend(loc="lower right")
     return fig 
 
-def plot_score_goodbad(y_true,y_score,figsize=(18,8),close=True):
+def plot_score_goodbad(y_true,y_score,figsize=(18,8),title=None,xlabel='Score',ylabel='Frequency',close=True):
     '''
     功能: 画好坏人分数分布对比直方图。
     y_true: 一维数组或series，代表真实的标签（0-1）。
     y_score: 一维数组或series，代表模型得分（一般为预测为0的概率）。
+    figsize: tuple，图片大小。
+    title: 字符串，图片标题，默认为'Histogram of Score in Good vs. Bad'。
+    xlabel: 字符串，图片xlabel。
+    ylabel: 字符串，图片ylabel。
     close: 是否关闭图片。
     返回图片对象。
     '''
@@ -125,20 +129,28 @@ def plot_score_goodbad(y_true,y_score,figsize=(18,8),close=True):
     ax=fig.add_subplot(111)
     ax.hist(bad,bins=100,alpha=0.6,color='r',label='Bad')
     ax.hist(good,bins=100,alpha=0.6,color='b',label='Good')
-    ax.set_xlabel('Score')
-    ax.set_ylabel('Frequency')
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
     ax.legend(loc='best')
-    ax.set_title('Histogram of Score in Good vs. Bad')
+    if title is None:
+        ax.set_title('Histogram of Score in Good vs. Bad')
+    else:
+        ax.set_title(title)
     if close:
         plt.close('all')
     return fig
 
-def plot_score_badratio(y_true,y_score,bins=10,figsize=(18,8),close=True):
+def plot_score_badratio(y_true,y_score,bins=10,figsize=(18,8),title=None,xlabel='Score',ylabel='Frequency',ylabel_secondary='Ratio of Y=1',close=True):
     '''
     功能: 画整体分数的直方图（左Y轴）和每个区间内坏人占比曲线趋势图（右Y轴）。
     y_true: 一维数组或series，代表真实的标签（0-1）。
     y_score: 一维数组或series，代表模型得分（一般为预测为0的概率）。
     bins: int（表示分割区间数量）或list（表示分割区间端点取值）。
+    figsize: tuple，图片大小。
+    title: 字符串，图片标题，默认为'Histogram and Ratio of Score'。
+    xlabel: 字符串，图片xlabel。
+    ylabel: 字符串，图片ylabel（左轴）。
+    ylabel_secondary: 字符串，图片ylabel（右轴）。
     close: 是否关闭图片。
     返回图片对象。
     '''
@@ -157,21 +169,26 @@ def plot_score_badratio(y_true,y_score,bins=10,figsize=(18,8),close=True):
     ax2.plot(x_mid,ratio,'-ro',label='right')
     h1, l1 = ax.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
-    ax.legend(h1 + h2, l1 + l2, loc=2)
-    ax.set_xlabel('Score')
-    ax.set_ylabel('Frequency')
-    ax2.set_ylabel('Ratio of Y=1')
-    ax.set_title('Histogram and Ratio of Score')
+    ax.legend(h1 + h2, l1 + l2, loc='best')
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax2.set_ylabel(ylabel_secondary)
+    if title is None:
+        ax.set_title('Histogram and Ratio of Score')
+    else:
+        ax.set_title(title)
     if close:
         plt.close('all')
     return fig
 
-def model_summary(y_true,y_prob,pos_label=1,thresholds=None,quantiles=None):
+def model_summary(y_true,y_prob,metrics_include=None,metrics_exclude=None,pos_label=1,thresholds=None,quantiles=None):
     '''
     根据真实标签和预测概率计算模型指标，主要包括：
-    num_pos、num_neg、accuracy、auc、precision_pos、recall_pos、f1_pos、precision_neg、recall_neg、f1_neg、TPR、FPR。
+    num_pos、num_neg、TP、FP、TN、FN、accuracy、auc、precision_pos、recall_pos、f1_pos、precision_neg、recall_neg、f1_neg、TPR、FPR。
     :param y_true: 一维数组或series，代表真实的标签。
     :param y_prob: 一维数组或series，代表预测为pos_label的概率。
+    :param metrics_include: 字符串列表，需要统计的模型指标，默认全部。
+    :param metrics_exclude: 字符串列表，不需要统计的模型指标，默认为空。
     :param pos_label: 数值型或string均可，代表正类标签。
     :param thresholds: None或数值列表。
                        None表示使用分位点列表quantiles获取阈值列表；
@@ -183,6 +200,14 @@ def model_summary(y_true,y_prob,pos_label=1,thresholds=None,quantiles=None):
         y_true=y_true.values
     if isinstance(y_prob,pd.Series):
         y_prob=y_prob.values
+    metrics_all=['num_pos','num_neg','TP','FP','TN','FN','accuracy','auc','precision_pos','recall_pos','f1_pos','precision_neg','recall_neg','f1_neg','TPR','FPR']
+    if metrics_exclude is None:
+        metrics_exclude=[]
+    if metrics_include is None:
+        metrics_include=[col for col in metrics_all if col not in metrics_exclude]
+    else:
+        metrics_include=[col for col in metrics_all if (col not in metrics_exclude) and (col in metrics_include)]
+
     num_pos=(y_true==pos_label).sum()
     num_neg=y_true.shape[0]-num_pos
     if quantiles is None:
@@ -190,26 +215,26 @@ def model_summary(y_true,y_prob,pos_label=1,thresholds=None,quantiles=None):
     if thresholds is None:
         thresholds=np.percentile(y_prob,quantiles)
     thresholds=np.sort(thresholds).tolist()
-    TP = np.array([np.sum((y_true == pos_label) & (y_prob > threshold)) for threshold in thresholds]).astype(float)
-    FP = np.array([np.sum((y_true != pos_label) & (y_prob > threshold)) for threshold in thresholds]).astype(float)
-    TN = np.array([np.sum((y_true != pos_label) & (y_prob <= threshold)) for threshold in thresholds]).astype(float)
-    FN = np.array([np.sum((y_true == pos_label) & (y_prob <= threshold)) for threshold in thresholds]).astype(float)
-    result={}
+    result = {}
+    result['TP'] = np.array([np.sum((y_true == pos_label) & (y_prob > threshold)) for threshold in thresholds]).astype(float)
+    result['FP'] = np.array([np.sum((y_true != pos_label) & (y_prob > threshold)) for threshold in thresholds]).astype(float)
+    result['TN'] = np.array([np.sum((y_true != pos_label) & (y_prob <= threshold)) for threshold in thresholds]).astype(float)
+    result['FN'] = np.array([np.sum((y_true == pos_label) & (y_prob <= threshold)) for threshold in thresholds]).astype(float)
     result['num_pos']=num_pos
     result['num_neg']=num_neg
-    result['accuracy']=(TP+TN)/float(y_true.shape[0])
+    result['accuracy']=(result['TP']+result['TN'])/float(y_true.shape[0])
     fpr,tpr,_=roc_curve(y_true,y_prob,pos_label=pos_label)
     result['auc']=auc(fpr,tpr)
-    result['precision_pos']=TP/(TP+FP)
-    result['recall_pos']=TP/(TP+FN)
+    result['precision_pos']=result['TP']/(result['TP']+result['FP'])
+    result['recall_pos']=result['TP']/(result['TP']+result['FN'])
     result['f1_pos']=2.0*result['precision_pos']*result['recall_pos']/(result['precision_pos']+result['recall_pos'])
-    result['precision_neg']=TN/(TN+FN)
-    result['recall_neg']=TN/(TN+FP)
+    result['precision_neg']=result['TN']/(result['TN']+result['FN'])
+    result['recall_neg']=result['TN']/(result['TN']+result['FP'])
     result['f1_neg']=2.0*result['precision_neg']*result['recall_neg']/(result['precision_neg']+result['recall_neg'])
     result['TPR']=result['recall_pos']
     result['FPR']=1-result['recall_neg']
     result=pd.DataFrame(result)
-    result=result.reindex(columns=['num_pos','num_neg','accuracy','auc','precision_pos','recall_pos','f1_pos','precision_neg','recall_neg','f1_neg','TPR','FPR'])
+    result=result.reindex(columns=metrics_include)
     result.index=thresholds
     result.index.name='threshold'
     return result
