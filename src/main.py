@@ -20,7 +20,7 @@ import src.FeatureSelection as FeatureSelection
 import src.ModelEvaluate as ModelEvaluate
 import src.utils.utils as utils
 
-path=r'F:\普林科技项目\哈尔滨银行\src\tasks\\'
+path='/Users/yuez/Desktop/工作/普林科技项目代码/ModelFlow/resource/'
 
 #%%读入数据并区分出X和Y
 data=pd.read_csv(path+'credit_card_data.csv',encoding='utf8',index_col=[0])

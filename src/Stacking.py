@@ -9,7 +9,7 @@ import pandas as pd
 import copy
 from abc import ABCMeta, abstractmethod
 from sklearn.base import BaseEstimator,TransformerMixin,clone
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold,cross_val_score
 import gc
 
 
@@ -425,10 +425,13 @@ def test():
     y1=st1.transform(X,train=False)
     y2=st1.transform(X,train=True)
 
-    sc1=StackingClassifier(stages=[stage1,stage2],combiner=combiner1,n_folds=5,return_array=False,verbose=True)
+    sc1=StackingClassifier(stages=[stage1,stage2],combiner=combiner1,n_folds=5,return_array=True,verbose=False)
     sc1.fit(X,y)
     y1=sc1.predict_proba(X,train=False)
     y2=sc1.predict_proba(X,train=True)
+
+    cross_val_score(sc1,X,y,scoring='roc_auc',verbose=1,cv=5)
+    cross_val_score(GradientBoostingClassifier(), X, y, scoring='roc_auc', verbose=1, cv=5)
 
     stage3=[('lr2',LogisticRegression()),('sc1',sc1)]
     combiner2=sc1
